@@ -1,0 +1,47 @@
+{
+  "name": "nt-mbus",
+  "version": "0.0.1",
+  "description": "Newtelco M-Bus Test",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "prettier": "prettier --check \"src/**/*.js\"",
+    "prettier:fix": "prettier --write \"src/**/*.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Nico Domino <ndomino@newtelco.de>",
+  "homepage": "https://git.newtelco.dev/newtelco/nt-mbus",
+  "repository": {
+    "type": "git",
+    "url": "git+https://git.newtelco.dev/newtelco/nt-mbus.git"
+  },
+  "bugs": {
+    "url": "https://git.newtelco.dev/newtelco/nt-mbus/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "node-mbus": "^1.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.6.0",
+    "husky": "^4.2.5",
+    "prettier": "^2.0.5",
+    "pretty-quick": "^2.0.1"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "semi": false,
+    "jsxSingleQuote": true,
+    "arrowParens": "avoid",
+    "tabWidth": 2,
+    "useTabs": false
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  }
+}
