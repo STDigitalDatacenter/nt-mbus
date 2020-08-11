@@ -13,7 +13,10 @@ Currently it is planned to provide the power data via SNMP to Netbox's [`axian-n
 ## Usage
 
 ```js
-node src/index.js
+git clone https://github.com/ndom91/nt-mbus
+cd nt-mbus
+npm i
+npm start
 ```
 
 ## Contributing
