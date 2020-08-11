@@ -41,7 +41,7 @@ const mbusInit = (host, port = 1234) => {
   const mbusOptions = {
     host: host,
     port: port,
-    timeout: 2000,
+    timeout: 200,
     autoConnect: false,
   }
   let mbusMaster
@@ -76,21 +76,21 @@ const mbusScan = async master => {
         .write()
       DEBUG && console.log(master.options.host, scanResult)
 
-      const promises = scanResult.map(feed => {
-        const feedNr = feed.substr(0, 8)
-        DEBUG && console.log('Fetching: ', feedNr)
-        return fetch(
-          `https://racks.newtelco.de/api/dcim/power-feeds/?name=${feedNr}`,
-          {
-            headers: {
-              Accept: 'application/json',
-              Authorization: `TOKEN ${process.env.NETBOX_TOKEN}`,
-            },
-          }
-        ).then(resp => resp.json())
-      })
+      // const promises = scanResult.map(feed => {
+      //   const feedNr = feed.substr(0, 8)
+      //   DEBUG && console.log('Fetching: ', feedNr)
+      //   return fetch(
+      //     `https://racks.newtelco.de/api/dcim/power-feeds/?name=${feedNr}`,
+      //     {
+      //       headers: {
+      //         Accept: 'application/json',
+      //         Authorization: `TOKEN ${process.env.NETBOX_TOKEN}`,
+      //       },
+      //     }
+      //   ).then(resp => resp.json())
+      // })
 
-      console.log(promises)
+      // console.log(promises)
 
       const netboxIds = await Promise.all(
         scanResult.map(feed =>
@@ -107,6 +107,7 @@ const mbusScan = async master => {
             .catch(e => console.error(e))
         )
       )
+      console.log('nbId', netboxIds)
       for (let result of netboxIds) {
         console.log(result)
       }
@@ -143,7 +144,7 @@ mbus.convertors.map(async (ip, i) => {
     db.get('convertors')
       .find({ ip: master.options.host })
       .get('feeds')
-      .push({ nr: feed, netboxId: response.id })
+      .push({ nr: data, netboxId: response.id })
       .write()
   }
   // const conv = db.get('convertors').find({ ip: ip }).value()
