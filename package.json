@@ -1,6 +1,6 @@
 {
   "name": "nt-mbus",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Newtelco M-Bus Test",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,14 @@
     "prettier:fix": "prettier --write \"src/**/*.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "mbus",
+    "query",
+    "electrical",
+    "kWh",
+    "node",
+    "netbox"
+  ],
   "author": "Nico Domino <ndomino@newtelco.de>",
   "homepage": "https://git.newtelco.dev/newtelco/nt-mbus",
   "repository": {
