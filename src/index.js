@@ -11,6 +11,7 @@ const adapter = new FileSync('db.json')
 const db = low(adapter)
 
 const DEBUG = process.argv[2] === '-d' || false
+DEBUG && console.log(process.env.NETBOX_TOKEN)
 
 db.defaults({ convertors: [] }).write()
 
@@ -73,13 +74,33 @@ const mbusScan = async master => {
       db.get('convertors')
         .push({ ip: master.options.host, feeds: scanResult })
         .write()
-      DEBUG && console.log(master.options.host, scanResult)
+
+      DEBUG && console.log('result:', master.options.host)
+      DEBUG && console.log('result1:', scanResult)
+
+      fetch(
+        `https://racks.newtelco.de/api/dcim/power-feeds/?name=${scanResult[0]}`,
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `TOKEN ${process.env.NETBOX_TOKEN}`,
+          },
+        }
+      )
+        .then(r => {
+          DEBUG && console.log('NB:', r)
+          return r.json()
+        })
+        .catch(e => {
+          console.log('fetch error:', e)
+          return e
+        })
 
       const netboxIds = await Promise.all(
-        scanResult.map(feed => {
-          DEBUG && console.log(feed)
+        scanResult.map(async feed => {
+          DEBUG && console.log('feed:', feed)
           const feedNr = feed.substr(0, 8)
-          return fetch(
+          const res = await fetch(
             `https://racks.newtelco.de/api/dcim/power-feeds/?name=${feedNr}`,
             {
               headers: {
@@ -88,11 +109,24 @@ const mbusScan = async master => {
               },
             }
           )
-            .then(r => r.json())
-            .catch(e => e)
+          const rackRes = await res.json()
+          const id = rackRes.results[0].id
+          DEBUG && console.log('rackId:', id)
+          return id
+          // .then(r => {
+          //   DEBUG && console.log('NB:', r)
+          //   return r.json()
+          // })
+          // .catch(e => {
+          //   console.log('fetch error:', e)
+          //   return e
+          // })
         })
       )
-        .then(data => data.json())
+        .then(data => {
+          DEBUG && console.log('data:', data)
+          return data
+        })
         .catch(e => console.error(e))
 
       console.log('nbId', netboxIds)
