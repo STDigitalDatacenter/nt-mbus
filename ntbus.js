@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 require('dotenv').config()
-const util = require('util')
-const snmp = require('net-snmp')
+const eachSeries = require('async/eachSeries')
 const fetch = require('node-fetch')
 const MbusMaster = require('node-mbus')
 const fs = require('fs')
@@ -19,7 +18,7 @@ db.defaults({ convertors: [] }).write()
 let DEBUG = false
 const args = process.argv
 
-const commands = ['new', 'get', 'complete', 'help']
+const commands = ['scan', 'query', 'reset', 'help']
 
 const usage = function () {
   const usageText = `
@@ -39,11 +38,7 @@ const usage = function () {
     help:     used to print the usage guide.
   `
   console.log(usageText)
-}
-
-if (args.length > 3) {
-  console.error(`only one argument can be accepted`)
-  usage()
+  return
 }
 
 if (args[2] === '-d') {
@@ -66,7 +61,7 @@ const mbusInit = (host, port = 1234) => {
   const mbusOptions = {
     host: host,
     port: port,
-    timeout: 100,
+    timeout: 500,
     autoConnect: false,
   }
   let mbusMaster
@@ -82,7 +77,7 @@ const mbusInit = (host, port = 1234) => {
       return false
     }
   } else {
-    DEBUG && console.log(mbusMaster)
+    // DEBUG && console.log(mbusMaster)
   }
 
   return mbusMaster
@@ -95,11 +90,11 @@ const mbusScan = async () => {
     if (!db.get('convertors').find({ ip: ip }).value()) {
       master.scanSecondary(async (err, scanResult) => {
         if (err) {
-          console.log('err: ' + err)
-          reject(err)
+          console.error('Scan Err: ' + err)
+          return
         }
 
-        DEBUG && console.log('result1:', scanResult)
+        DEBUG && console.log('Scan Result:', scanResult)
 
         db.get('convertors')
           .push({ ip: master.options.host, feeds: scanResult })
@@ -111,31 +106,71 @@ const mbusScan = async () => {
 
 const mbusQuery = () => {
   const mbus = getInventory()
-  mbus.convertors.map(async conv => {
-    const master = mbusInit(conv.ip, 1234)
-    conv.feeds.map(feed => {
-      master.getData(feed, (err, mbusData) => {
-        if (err) {
-          console.log('err: ' + err)
-          return false
-        }
-        const feedNr = feed.substr(0, 8)
-        fetch(
-          `https://racks.newtelco.de/api/dcim/power-feeds/?name=${feedNr}`,
-          {
-            headers: {
-              Accept: 'application/json',
-              Authorization: `TOKEN ${process.env.NETBOX_TOKEN}`,
-            },
+  mbus.convertors.map(conv => {
+    const master = mbusInit(conv, 1234)
+    const feeds = db.get('convertors').find({ ip: conv }).value()
+    if (!feeds) return false
+    // console.log('feeeeeds', feeds)
+
+    eachSeries(
+      feeds.feeds,
+      function (feed, callback) {
+        const feedNr = feed.substr(0, 8).replace(/^0+/g, '')
+        DEBUG && console.log('Processing: ', feedNr)
+        master.getData(feed, (err, data) => {
+          if (err) {
+            console.error('[X] ' + err)
           }
-        )
-          .then(data => data.json())
-          .then(data => {
-            console.log(data.results[0].id, mbusData)
-            // return { feed: feed, nbId: data.results[0].id }
-          })
-      })
-    })
+          fetch(
+            `https://racks.newtelco.de/api/dcim/power-feeds/?name=${feedNr}`,
+            {
+              headers: {
+                Accept: 'application/json',
+                Authorization: `TOKEN ${process.env.NETBOX_TOKEN}`,
+              },
+            }
+          )
+            .then(data => data.json())
+            .then(nbData => {
+              if (nbData && nbData.results[0] && data && data.DataRecord) {
+                const nbId = nbData.results[0].id
+                let value = ''
+                if (data.SlaveInformation.Version === 0) {
+                  // console.log(data)
+                  const record = data.DataRecord.find(record => {
+                    if (record.Unit === 'Power (W)') {
+                      return true
+                    } else if (record.Unit === 'Power (1e-1 W)') {
+                      return true
+                    }
+                  })
+                  // console.log(record)
+                  value = record.Value
+                } else if (data.SlaveInformation.Version === 1) {
+                  // console.log(data.DataRecord)
+                  const record = data.DataRecord.find(
+                    record => record.Unit === 'Power (W)'
+                  )
+                  value = record.Value
+                } else if (data.SlaveInformation.Version === 2) {
+                  // console.log(data)
+                  // console.log(nbData.results)
+                  // value = data.DataRecord.find(record => record.id == 2).Value
+                  // console.log(data.DataRecord[2])
+                  value = data.DataRecord[2].Value
+                }
+                console.log(feedNr, nbId, value)
+              }
+              callback()
+            })
+            .catch(err => console.error(err))
+        })
+      },
+      function (err) {
+        if (err) console.error(err)
+        console.log(`${conv} Completed`)
+      }
+    )
   })
 }
 
@@ -144,6 +179,7 @@ switch (args[2]) {
     DEBUG = true
     switch (args[3]) {
       case 'help':
+        console.log(' help2')
         usage()
         break
       case 'scan':
@@ -158,7 +194,9 @@ switch (args[2]) {
         console.error('invalid command passed')
         usage()
     }
+    break
   case 'help':
+    console.log(' help1')
     usage()
     break
   case 'scan':
