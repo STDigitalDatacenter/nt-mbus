@@ -1,3 +1,4 @@
 node_modules/*
 inventory.json
 .env
+crash.log
