@@ -34,7 +34,7 @@
     "lowdb": "^1.0.0",
     "net-snmp": "^2.7.1",
     "node-fetch": "^2.6.0",
-    "node-mbus": "^1.2.0"
+    "node-mbus": "^1.2.1"
   },
   "devDependencies": {
     "eslint": "^7.6.0",

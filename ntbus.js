@@ -136,7 +136,6 @@ const mbusQuery = () => {
                 const nbId = nbData.results[0].id
                 let value = ''
                 if (data.SlaveInformation.Version === 0) {
-                  // console.log(data)
                   const record = data.DataRecord.find(record => {
                     if (record.Unit === 'Power (W)') {
                       return true
@@ -144,19 +143,13 @@ const mbusQuery = () => {
                       return true
                     }
                   })
-                  // console.log(record)
                   value = record.Value
                 } else if (data.SlaveInformation.Version === 1) {
-                  // console.log(data.DataRecord)
                   const record = data.DataRecord.find(
                     record => record.Unit === 'Power (W)'
                   )
                   value = record.Value
                 } else if (data.SlaveInformation.Version === 2) {
-                  // console.log(data)
-                  // console.log(nbData.results)
-                  // value = data.DataRecord.find(record => record.id == 2).Value
-                  // console.log(data.DataRecord[2])
                   value = data.DataRecord[2].Value
                 }
                 console.log(feedNr, nbId, value)
